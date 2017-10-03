@@ -1,3 +1,3 @@
 # SCDTR
 
-Project to Distributed Real Time Control Systems
+Project to a Distributed Real Time Control Systems course
