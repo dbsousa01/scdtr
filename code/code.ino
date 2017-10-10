@@ -13,7 +13,7 @@ int compare (const void * a, const void * b){
 }
 
 double luximeter (){
-//blasvjnasdjlm
+//fnsdfsgksmçmç
   double AR[4];
   
 
