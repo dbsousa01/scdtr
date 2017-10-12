@@ -11,6 +11,10 @@ float b = 1.808;
 float m = -0.692;
 int R1 = 10;
   
+double time1 , time2;
+
+int i , j;
+
 double luximeter (double readval){  // Converts to luximeter
 
   double F = (R1*(5.0-readval*5.0/1023.0))/(readval*5.0/1023.0);
@@ -22,7 +26,7 @@ double luximeter (double readval){  // Converts to luximeter
 
 void setup() {
   // initialize serial communication at 9600 bits per second:
-  Serial.begin(9600);
+  Serial.begin(115200);
   pinMode(LED, OUTPUT);
   pinMode(LDR, INPUT);
   
@@ -33,20 +37,33 @@ void loop() {
   double lux_lido;
   double  AR;
   double media;
-
-  for(int i=0;i==250; i+=10){ //PWM stair
-    analogWrite(LED,i);
+  
+  for (i = 0 ; i<=250 ; i = i + 10){ //PWM stair
     
-    for(int i = 0; i< MaxSamples; i++){ // Reads 5 values and does the mean to reduce noise
+    Serial.println("dentro do for");
+    
+    time1 = millis(); //captiures the time of initialization of the pwm step
+    analogWrite(LED,i);
+    delay(50); //Waits a certain time for stability in the pwm value before reading
+    
+    for(j = 0 ; j < MaxSamples ; j++){ // Reads 5 values and does the mean to reduce noise
       //delay(SampleDelay); // Introduces a delay so you can read 5 values per sample - Need to calculate
       AR = analogRead(LDR);
       media += AR;
-    } 
+    }
+    
+    media = media/MaxSamples;
+    Serial.println(media);
+    Serial.println(i);
+    time2 = millis(); //captures the time of the finishing of the computation
+    delay(100-(time1-time2)); //guarantees that the pwm step is 0.1 sec long
+    
   }
-  media = media/MaxSamples;
+  
   lux_lido = luximeter(media);
   
-  Serial.print(lux_lido);
+  Serial.println(lux_lido);
   delay(500);        // delay in between reads for stability
+  
 }
 
