@@ -11,7 +11,11 @@ float b = 1.808;
 float m = -0.692;
 int R1 = 10;
   
+<<<<<<< bd14ccce57c30e552373f93508f8ef595ea5641a
 double time1 , time2;
+=======
+unsigned long time1 , time2;
+>>>>>>> Matlab communication and pwm plots
 
 int i , j;
 
@@ -40,8 +44,11 @@ void loop() {
   
   for (i = 0 ; i<=250 ; i = i + 10){ //PWM stair
     
+<<<<<<< bd14ccce57c30e552373f93508f8ef595ea5641a
     Serial.println("dentro do for");
     
+=======
+>>>>>>> Matlab communication and pwm plots
     time1 = millis(); //captiures the time of initialization of the pwm step
     analogWrite(LED,i);
     delay(50); //Waits a certain time for stability in the pwm value before reading
@@ -62,7 +69,11 @@ void loop() {
   
   lux_lido = luximeter(media);
   
+<<<<<<< bd14ccce57c30e552373f93508f8ef595ea5641a
   Serial.println(lux_lido);
+=======
+  //Serial.println(lux_lido);
+>>>>>>> Matlab communication and pwm plots
   delay(500);        // delay in between reads for stability
   
 }
