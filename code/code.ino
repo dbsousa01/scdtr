@@ -4,15 +4,14 @@
 #define LED 13
 #define LDR A0
 
+#define MaxSamples 5
+#define SampleDelay 1000
+
 float b = 1.808;
 float m = -0.692;
 int R1 = 10;
-
-int compare (const void * a, const void * b){
-    return (*(int *)a - *(int *)b);
-}
-
-double luximeter (double readval){ 
+  
+double luximeter (double readval){  // Converts to luximeter
 
   double F = (R1*(5.0-readval*5.0/1023.0))/(readval*5.0/1023.0);
   double lux_lido = pow(10,(log10(F)-b)/m);
@@ -31,34 +30,24 @@ void setup() {
 
 // the loop routine runs over and over again forever:
 void loop() {
-  
   double lux_lido;
-
-  /* for (int i=0;i==4;i++){
-    AR[i] = analogRead(LDR);
-    delay(10);    
-  }  
-
-  qsort(AR, 5, sizeof(double), compare);
-  double AR_med = AR[2];
-  for (int i=0;i==4;i++){
-    Serial.println(AR[i]);
-  }*/
-
-  double  AR = analogRead(LDR);
+  double  AR;
+  double media;
   
   digitalWrite(LED, HIGH);
-  delay(1000);                       // wait for a second
-  lux_lido= luximeter(AR);
-  //Serial.println(lux_lido);
-  //digitalWrite(LED, LOW);    // turn the LED off by making the voltage LOW
-  //delay(1);                       // wait for a second
+  delay(1000);                       // wait
+  digitalWrite(LED, LOW);    // turn the LED off by making the voltage LOW
+  delay(1000);                       // wait
   
+  for(int i = 0; i< MaxSamples; i++){ // Reads 5 values and does the mean to reduce noise
+    AR = analogRead(LDR);
+    media += AR;
+    delay(SampleDelay); // Introduces a delay so you can read 5 values per sample - Need to calculate
+  }
+  media = media/MaxSamples;
+  lux_lido = luximeter(media);
   
   Serial.print(lux_lido);
-  Serial.println(" lux");
   delay(500);        // delay in between reads for stability
-  int val;
-  Serial.read(val);
 }
 
