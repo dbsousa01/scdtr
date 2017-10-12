@@ -1,7 +1,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#define LED 13
+#define LED 10
 #define LDR A0
 
 #define MaxSamples 5
@@ -33,16 +33,15 @@ void loop() {
   double lux_lido;
   double  AR;
   double media;
-  
-  digitalWrite(LED, HIGH);
-  delay(1000);                       // wait
-  digitalWrite(LED, LOW);    // turn the LED off by making the voltage LOW
-  delay(1000);                       // wait
-  
-  for(int i = 0; i< MaxSamples; i++){ // Reads 5 values and does the mean to reduce noise
-    AR = analogRead(LDR);
-    media += AR;
-    delay(SampleDelay); // Introduces a delay so you can read 5 values per sample - Need to calculate
+
+  for(int i=0;i==250; i+=10){ //PWM stair
+    analogWrite(LED,i);
+    
+    for(int i = 0; i< MaxSamples; i++){ // Reads 5 values and does the mean to reduce noise
+      //delay(SampleDelay); // Introduces a delay so you can read 5 values per sample - Need to calculate
+      AR = analogRead(LDR);
+      media += AR;
+    } 
   }
   media = media/MaxSamples;
   lux_lido = luximeter(media);
