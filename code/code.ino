@@ -10,12 +10,10 @@
 float b = 1.808;
 float m = -0.692;
 int R1 = 10;
-  
-<<<<<<< bd14ccce57c30e552373f93508f8ef595ea5641a
-double time1 , time2;
-=======
+
+int flag = 0;
+
 unsigned long time1 , time2;
->>>>>>> Matlab communication and pwm plots
 
 int i , j;
 
@@ -33,7 +31,7 @@ void setup() {
   Serial.begin(115200);
   pinMode(LED, OUTPUT);
   pinMode(LDR, INPUT);
-  
+
 }
 
 // the loop routine runs over and over again forever:
@@ -42,38 +40,38 @@ void loop() {
   double  AR;
   double media;
   
-  for (i = 0 ; i<=250 ; i = i + 10){ //PWM stair
-    
-<<<<<<< bd14ccce57c30e552373f93508f8ef595ea5641a
-    Serial.println("dentro do for");
-    
-=======
->>>>>>> Matlab communication and pwm plots
+  for (i = 0 ; i<=250 ; i = i + 10){ //PWM stair    
+
     time1 = millis(); //captiures the time of initialization of the pwm step
     analogWrite(LED,i);
     delay(50); //Waits a certain time for stability in the pwm value before reading
-    
-    for(j = 0 ; j < MaxSamples ; j++){ // Reads 5 values and does the mean to reduce noise
+    time2 = millis();
+    while((time2-time1) <= 100){
+      time2 = millis();    
+      for(j = 0 ; j < MaxSamples ; j++){ // Reads 5 values and does the mean to reduce noise
       //delay(SampleDelay); // Introduces a delay so you can read 5 values per sample - Need to calculate
       AR = analogRead(LDR);
       media += AR;
+      }
+    
+      media = media/MaxSamples;
+      
+      Serial.print(media);
+      Serial.print(",");
+      Serial.print(i);
+      Serial.println(";");
+  
+      media = 0;    
+      //time2 = millis(); //captures the time of the finishing of the computation
+      //delay(100-(time1-time2)); //guarantees that the pwm step is 0.1 sec long
+      
     }
-    
-    media = media/MaxSamples;
-    Serial.println(media);
-    Serial.println(i);
-    time2 = millis(); //captures the time of the finishing of the computation
-    delay(100-(time1-time2)); //guarantees that the pwm step is 0.1 sec long
-    
   }
   
   lux_lido = luximeter(media);
-  
-<<<<<<< bd14ccce57c30e552373f93508f8ef595ea5641a
-  Serial.println(lux_lido);
-=======
+
   //Serial.println(lux_lido);
->>>>>>> Matlab communication and pwm plots
+
   delay(500);        // delay in between reads for stability
   
 }
