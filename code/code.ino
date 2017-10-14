@@ -1,7 +1,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#define LED 10
+#define LED 6
 #define LDR A0
 
 #define MaxSamples 5
@@ -10,6 +10,10 @@
 float b = 1.808;
 float m = -0.692;
 int R1 = 10;
+
+double lux_lido;
+double  AR;
+double media;
 
 int flag = 0;
 
@@ -31,14 +35,13 @@ void setup() {
   Serial.begin(115200);
   pinMode(LED, OUTPUT);
   pinMode(LDR, INPUT);
+  
 
 }
 
+
 // the loop routine runs over and over again forever:
 void loop() {
-  double lux_lido;
-  double  AR;
-  double media;
   
   for (i = 0 ; i<=250 ; i = i + 10){ //PWM stair    
 
@@ -56,9 +59,15 @@ void loop() {
     
       media = media/MaxSamples;
       
+      lux_lido = luximeter(media);
+
+      
+
       Serial.print(media);
       Serial.print(",");
       Serial.print(i);
+      Serial.print(",");
+      Serial.print(lux_lido);
       Serial.println(";");
   
       media = 0;    
@@ -68,11 +77,9 @@ void loop() {
     }
   }
   
-  lux_lido = luximeter(media);
 
-  //Serial.println(lux_lido);
 
-  delay(500);        // delay in between reads for stability
+  delay(1000);        // delay in between reads for stability
   
 }
 

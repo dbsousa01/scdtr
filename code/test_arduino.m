@@ -33,16 +33,18 @@ readasync(serie1);
 while(serie1.BytesAvailable <= 0)  %wait until Arduino outputs data 
 end
 i = 1;
-AR = cell(samples,1);
-PWM = cell(samples,1);
+
+
+
 while (i <= samples)
      
-     string = fscanf(serie1);
-     [AR(i), PWM(i)] = strsplit(string, ';');
+     %string(i) = cellstr(fscanf(serie1));
+     
      
 %      AR(i) = fscanf(serie1,'%f'); %read sensor
 %      PWM(i) = fscanf(serie1,'%f');
      
+     Voltage(i) = readDigitalPin(serie1,'D10');
      flushinput(serie1);
      
      i = i + 1;
@@ -51,18 +53,20 @@ end
 
 % voltage on LDR
 
-vldr = 5-((AR*5)./1023);
-
-AR = str2double(AR);
-PWM = str2double(PWM);
-figure
-plot(AR);
+% vldr = 5-((AR*5)./1023);
 % 
+% AR = str2double(AR);
+% PWM = str2double(PWM);
+% figure
+% plot(AR);
+% % 
+% figure
+% plot(PWM);
+% 
+% figure
+% plot(vldr);
+% % close the serial port!
 figure
-plot(PWM);
-
-figure
-plot(vldr);
-% close the serial port!
+plot(Voltage);
 fclose(serie1);
-
+% 
