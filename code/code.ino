@@ -17,7 +17,7 @@ double media;
 
 int flag = 0;
 
-unsigned long time1 , time2 , time3 , time4;
+unsigned long time1 , time2;
 
 int i , j;
 
@@ -42,7 +42,7 @@ void setup() {
 
 // the loop routine runs over and over again forever:
 void loop() {
-  /*
+  
   for (i = 0 ; i<=250 ; i = i + 10){ //PWM stair    
 
     time1 = millis(); //captiures the time of initialization of the pwm step
@@ -74,23 +74,6 @@ void loop() {
       //time2 = millis(); //captures the time of the finishing of the computation
       //delay(100-(time1-time2)); //guarantees that the pwm step is 0.1 sec long
       
-    }
-  }
-  */
- 
-  time1 = millis();
-  analogWrite(LED,150);
-  while((time2-time1) <= 1000){
-    time2 = millis();
-    while((time3-time2) <= 1){
-      time3 = millis();
-      for(j = 0 ; j < MaxSamples ; j++){ // Reads 5 values and does the mean to reduce noise
-        //delay(SampleDelay); // Introduces a delay so you can read 5 values per sample - Need to calculate
-        AR = analogRead(LDR);
-        media += AR;
-        }
-      lux_lido = luximeter(media);
-      Serial.println(lux_lido);
     }
   }
   
