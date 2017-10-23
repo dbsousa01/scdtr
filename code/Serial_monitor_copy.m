@@ -603,9 +603,9 @@ vldr = 5-(AR.*5./1023);
 
 t = linspace(0,2.5,length(PWM))';
 
-% lux_values = polyfit(t,lux,1);
-% lux_m = lux_values(1,1);
-% lux_b = lux_values(1,2);
+lux_values = polyfit(PWM,lux,1);
+lux_m = lux_values(1,1);
+lux_b = lux_values(1,2);
 
 figure
 plot(t,PWM)
@@ -632,8 +632,7 @@ figure
 plot(PWM,lux)
 title('Lux values computed function of PWM stair')
 
-% f = @(x) lux_m * x + lux_b;
-% figure
-% fplot(f)
-% title('Lux values fitted to a line')
+figure
+plot(PWM,AR)
+title('AR function of PWM stair')
 

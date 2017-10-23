@@ -1,7 +1,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#define LED 6
+#define LED 3
 #define LDR A0
 
 #define MaxSamples 5
@@ -21,6 +21,38 @@ unsigned long time1 , time2;
 
 int i , j;
 
+void setPwmFrequency(int pin, int divisor) {
+  byte mode;
+  if(pin == 5 || pin == 6 || pin == 9 || pin == 10) {
+    switch(divisor) {
+      case 1: mode = 0x01; break;
+      case 8: mode = 0x02; break;
+      case 64: mode = 0x03; break;
+      case 256: mode = 0x04; break;
+      case 1024: mode = 0x05; break;
+      default: return;
+    }
+    if(pin == 5 || pin == 6) {
+      TCCR0B = TCCR0B & 0b11111000 | mode;
+    } else {
+      TCCR1B = TCCR1B & 0b11111000 | mode;
+    }
+  } else if(pin == 3 || pin == 11) {
+    switch(divisor) {
+      case 1: mode = 0x01; break;
+      case 8: mode = 0x02; break;
+      case 32: mode = 0x03; break;
+      case 64: mode = 0x04; break;
+      case 128: mode = 0x05; break;
+      case 256: mode = 0x06; break;
+      case 1024: mode = 0x07; break;
+      default: return;
+    }
+    TCCR2B = TCCR2B & 0b11111000 | mode;
+  }
+}
+
+
 double luximeter (double readval){  // Converts to luximeter
 
   double F = (R1*(5.0-readval*5.0/1023.0))/(readval*5.0/1023.0);
@@ -29,12 +61,34 @@ double luximeter (double readval){  // Converts to luximeter
   return(lux_lido);
 }
 
+int read_string(char *buf){
 
+  if(Serial.available()<=0) // There is nothing to read, reutnr -1
+    return -1;
+
+  while(Serial.available()>0){ // while there is stuff to read
+    b = Serial.read();
+
+    if(b == 0 || b == '\n' || b == '\r')
+      break;
+      
+    *buf = b;
+    *(buf++);//passes on to the next char of the string
+
+    delay(1);
+  }
+
+  *buf='\0'; //Finalizes buffer with a string finalizer
+  Serial.println(buf); // Prints what it was read, for debugging reasons
+  return 1; // reading is finished, buf has everything that its read, return 1
+}
 void setup() {
-  // initialize serial communication at 9600 bits per second:
+  // initialize serial communication at 115200 bits per second:
   Serial.begin(115200);
   pinMode(LED, OUTPUT);
   pinMode(LDR, INPUT);
+
+  setPwmFrequency(LED,1);
   
 
 }
