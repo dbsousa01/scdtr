@@ -64,7 +64,7 @@ void setup() {
   setPwmFrequency(LED, 1);
 
   
-  analogWrite(LED, 0);
+  analogWrite(LED, 1);
   delay(1000);	// allow things to stabilize
   
 }
@@ -72,7 +72,6 @@ void setup() {
 
 // the loop routine runs over and over again forever:
 void loop() {
-  analogWrite(LED, 0);
   Serial.println("Beginning of the step");
   for (int i = 1 ; i<=time_int/sample_time ; i++){
     
