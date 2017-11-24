@@ -1,7 +1,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#define LED 6
+#define LED 3
 #define LDR A0
   
 float b = 1.808;
@@ -9,10 +9,10 @@ float m = -0.692;
 int R1 = 10;
 
 unsigned long delta_t1 , delta_t2;
-unsigned long time_int = 100000 *10;
-unsigned long step_interval = 1000000 *10;
+unsigned long time_int = 100000;
+unsigned long step_interval = 1000000;
 
-unsigned long sample_time = 2000 *10;
+unsigned long sample_time = 2000;
 
 double  AR , pwm , lux_lido;
 
@@ -64,7 +64,7 @@ void setup() {
   setPwmFrequency(LED, 1);
 
   
-  analogWrite(LED, 0);
+  analogWrite(LED, 1);
   delay(1000);	// allow things to stabilize
   
 }
@@ -72,16 +72,15 @@ void setup() {
 
 // the loop routine runs over and over again forever:
 void loop() {
-  analogWrite(LED, 0);
-  Serial.println("Beginnig of the step");
+  Serial.println("Beginning of the step");
   for (int i = 1 ; i<=time_int/sample_time ; i++){
     
     delta_t1 = micros();
     
     AR = analogRead(LDR);
-    lux_lido = luximeter(AR);
+    //lux_lido = luximeter(AR);
    
-    Serial.print(lux_lido);
+    Serial.print(AR);
     Serial.println(";");
     
     delta_t2 = micros();
@@ -93,9 +92,9 @@ void loop() {
     delta_t1 = micros();
     
     AR = analogRead(LDR);
-    lux_lido = luximeter(AR);
+    //lux_lido = luximeter(AR);
    
-    Serial.print(lux_lido);
+    Serial.print(AR);
     Serial.println(";");
     
     delta_t2 = micros();
