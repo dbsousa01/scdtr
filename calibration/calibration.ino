@@ -21,9 +21,10 @@ char com_buf[5];
 int buf_idx = 0;
 float buf_num;
 
-float b = 1.808;
+float b;
 float m = -0.692;
 int R1 = 10;
+
 
 void setPwmFrequency(int pin, int divisor) {
   byte mode;
@@ -92,7 +93,7 @@ void calibration(){
       
    o = luximeter(val);
    
-   delay(500);
+   delay(100);
    
    analogWrite(LED,di);
    
@@ -106,13 +107,13 @@ void calibration(){
    Serial.println(l_i);
 
    if (di == 0){
-     dj = 255;
-     k_ij = (l_i - o)/dj;
+     k_ij = (l_i - o)/100;
    }else if (di == 255){
-     k_ii = (l_i - o)/di;     
+     k_ii = (l_i - o)/100;     
    }  
-  
- 
+
+  delay(500);
+   
   //---------------------LED CHANGE---------------------// 
    
    di = 255 * (-self_add + 2);
@@ -129,10 +130,9 @@ void calibration(){
    Serial.println(l_i);    
    
    if (di == 0){
-     dj = 255;
-     k_ij = (l_i - o)/dj;
+     k_ij = (l_i - o)/100;
    }else if (di == 255){
-     k_ii = (l_i - o)/di;     
+     k_ii = (l_i - o)/100;     
    }
    
 }
@@ -144,6 +144,13 @@ void setup(){
   pinMode(LDR, INPUT);
   
   setPwmFrequency(LED, 1);
+  
+  
+  if(self_add == 1){
+    b = 1.758;
+  }else{
+    b = 1.808;
+  }
   
   analogWrite(LED, 0);
   Serial.println("Beginning of the program");
