@@ -8,7 +8,7 @@
 #define LDR A0
 #define numChar 140
 
-#define iterations 50
+#define iterations 5
 #define sample_time 3000
 
 #define high 40
@@ -63,6 +63,10 @@ int R1 = 10;
 
 double dii=0 , dij=0 , djj=0 , dji=0 , dii_av = 0 , dij_av = 0;
 
+double djj_ant = 1 , dji_ant = 1;
+
+double dii_send = 0 , dij_send = 0;
+
 double rho = 0.01;
 double qi = 0.01 , qj = 0.01;
 double ci = 1;
@@ -70,7 +74,7 @@ double yii = 0 , yij = 0;
 
 int K;
 
-int flag_received = 0 , flag_calibration = 0;
+int flag_received = 0 , flag_calibration = 0 , flag_sent = 0;
 
 double dii_best , best_dii[iterations];
 double dij_best , best_dij[iterations];
@@ -136,28 +140,44 @@ void setPwmFrequency(int pin, int divisor) {
 //..................................WIRE RECEIVE.......................................//
 void receiveEvent(int howMany){
   char c_rec;
+  char com_buf[10];
   char * strtokaux1;
   int buf_idx=0;
   while(Wire.available() > 0){
     c_rec = Wire.read();  // receive byte as a character 
-    if(c_rec != '\n' && c_rec != '\0'){
+    if ( c_rec == 'a' ){
+      flag_sent = 1;
+      Serial.println("Cheguei aqui8");
+      Serial.println(c_rec);
+    }else{
       com_buf[buf_idx] = c_rec;
       buf_idx++;
+
     }
   }
-  Serial.println(com_buf);
-  
-  strtokaux1 = strtok(com_buf, ";");
-  djj = atof(strtokaux1);
 
-  strtokaux1 = strtok(NULL, ";");
-  dji = atof(strtokaux1);
   
-//  Serial.print("Valor de djj recebido: ");
-//  Serial.println(djj);
-//  Serial.print("Valor de dji recebido: ");
-//  Serial.println(dji);
+  Serial.println(com_buf);
+    
+  strtokaux1 = strtok(com_buf, ";");
+  djj = atof(strtokaux1)*100;
+  
+  strtokaux1 = strtok(NULL, ";");
+  dji = atof(strtokaux1)*100;
+  
+  Serial.print("Valor de djj recebido: ");
+  Serial.println(djj);
+  Serial.print("Valor de dji recebido: ");
+  Serial.println(dji);
   flag_received = 1;
+    
+
+  char a = 'a'; 
+  Wire.beginTransmission(send_add);
+  Wire.write(a);
+  Wire.endTransmission();
+  
+  
 }
 //....................................................................................//
 
@@ -305,23 +325,33 @@ void calibration(){
 //..................................SEND VALUES.......................................//
 
 void send_values(int add,double value1,double value2){
-  char b1[5];
-  char b2[5];
+  char b1[4+1];
+  char b2[4+1];
   
   char b[10];
   
-  dtostrf(value1,4, 2, b1);
-  dtostrf(value2,4, 2, b2);
+  dtostrf(value1,3,2,b1);
+  dtostrf(value2,3,2,b2);
   
-  sprintf(b,"%s;%s",b1,b2);  
+  sprintf(b,"%s;%s",b1,b2);
 
-//  Serial.print("value to send: ");
-//  Serial.println(b);
   
-  Wire.beginTransmission(add);
-  Wire.write(b);
-  Wire.endTransmission();
-  
+  //int count = 1;
+  //while ( flag_sent == 0 && count <= 10){
+    Serial.println("Cheguei aqui6");
+    Wire.beginTransmission(send_add);
+    Wire.write(b);
+    Wire.endTransmission();
+    //delay(100);
+    //count++;
+  //}
+  while (flag_received == 0 && flag_sent == 0/*&& djj == djj_ant && dji == dji_ant*/){
+    delay(10);
+  }
+  flag_received = 0;
+  flag_sent = 0;
+  Serial.println("Cheguei aqui7");
+ 
 }
 //....................................................................................//
 
@@ -352,9 +382,11 @@ void feasibility_check(double a,double b){
 void consensus(){
   
   for (K = 0; K < iterations; K++){
-    while(flag_received == 0 && flag_calibration == 0){
-      delay(10);
-    }
+//    while(flag_received == 0){
+//      delay(10);
+//    }
+//    flag_received = 0;
+    
       dii_best = -1;
       dij_best = -1;
       best_min_i[K] = 100000; //big number
@@ -533,8 +565,7 @@ void consensus(){
       dii = dii_best;
       dij = dij_best;
       
-//      djj_ant = djj;
-//      dji_ant = dji;
+
       
       //compute average with available knowledge
       
@@ -548,11 +579,12 @@ void consensus(){
       
       //Send node i solution to neighboor
 
-      flag_received = 0;
+      dii_send = dii/100;
+      dij_send = dij/100;
+
+      send_values(send_add,dii_send,dij_send);
       
-      send_values(send_add,dii,dij);
       
-    
       
   }
   
@@ -560,7 +592,9 @@ void consensus(){
   Serial.print("Nova ref: ");
   Serial.println(ref);
   Serial.print("Consensus: ");
-  Serial.println(dii_av);    
+  Serial.print(dii_av);
+  Serial.print(" ; "); 
+  Serial.println(dij_av);    
   
 }
 
