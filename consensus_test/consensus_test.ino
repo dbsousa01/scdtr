@@ -74,7 +74,7 @@ double yii = 0 , yij = 0;
 
 int K;
 
-int flag_received = 0 , flag_calibration = 0 , flag_sent = 0;
+volatile int flag_received = 0 , flag_calibration = 0 , flag_sent = 0 , flag_value = 0;
 
 double dii_best , best_dii[iterations];
 double dij_best , best_dij[iterations];
@@ -147,35 +147,45 @@ void receiveEvent(int howMany){
     c_rec = Wire.read();  // receive byte as a character 
     if ( c_rec == 'a' ){
       flag_sent = 1;
-      Serial.println("Cheguei aqui8");
-      Serial.println(c_rec);
+      Serial.println("ACK");
+      break;
+    }else if (c_rec == 'c'){
+      flag_calibration = 1;
+      Serial.println("O outro acabou a calibração");
+      break;
     }else{
       com_buf[buf_idx] = c_rec;
       buf_idx++;
+      flag_value = 1;
 
     }
   }
 
-  
-  Serial.println(com_buf);
+  if(flag_value == 1){
+    Serial.println(com_buf);
+      
+    strtokaux1 = strtok(com_buf, ";");
+    djj = atof(strtokaux1)*100;
     
-  strtokaux1 = strtok(com_buf, ";");
-  djj = atof(strtokaux1)*100;
-  
-  strtokaux1 = strtok(NULL, ";");
-  dji = atof(strtokaux1)*100;
-  
-  Serial.print("Valor de djj recebido: ");
-  Serial.println(djj);
-  Serial.print("Valor de dji recebido: ");
-  Serial.println(dji);
-  flag_received = 1;
-    
+    strtokaux1 = strtok(NULL, ";");
+    dji = atof(strtokaux1)*100;
 
-  char a = 'a'; 
-  Wire.beginTransmission(send_add);
-  Wire.write(a);
-  Wire.endTransmission();
+    Serial.println("Porque... porque");
+    
+    Serial.print(F("Valor de djj recebido: "));
+    Serial.println(djj);
+    Serial.print(F("Valor de dji recebido: "));
+    Serial.println(dji);
+
+    Serial.println("Porque... porque 2");
+    
+    char a = 'a'; 
+    Wire.beginTransmission(send_add);
+    Wire.write(a);
+    Wire.endTransmission();
+    flag_received = 1;
+    flag_value = 0;
+  }
   
   
 }
@@ -318,6 +328,19 @@ void calibration(){
    }else if (di == 255){
      kii = (li - o)/100;     
    }
+
+  Serial.println(F("Calibration concluded"));
+  Serial.print(F("Value of o: "));
+  Serial.println(o);
+  Serial.print(F("Value of kii (escala 100): "));
+  Serial.println(kii);
+  Serial.print(F("Value of kij (escala 100): "));
+  Serial.println(kij); 
+
+  char c = 'c'; 
+  Wire.beginTransmission(send_add);
+  Wire.write(c);
+  Wire.endTransmission();
    
 }
 //....................................................................................//
@@ -335,22 +358,23 @@ void send_values(int add,double value1,double value2){
   
   sprintf(b,"%s;%s",b1,b2);
 
-  
   //int count = 1;
   //while ( flag_sent == 0 && count <= 10){
-    Serial.println("Cheguei aqui6");
+    
     Wire.beginTransmission(send_add);
     Wire.write(b);
     Wire.endTransmission();
+    Serial.println("Cheguei aqui6");
     //delay(100);
     //count++;
   //}
-  while (flag_received == 0 && flag_sent == 0/*&& djj == djj_ant && dji == dji_ant*/){
+  while (flag_received == 0 || flag_sent == 0 || flag_calibration == 0){
     delay(10);
   }
   flag_received = 0;
   flag_sent = 0;
   Serial.println("Cheguei aqui7");
+  
  
 }
 //....................................................................................//
@@ -619,21 +643,13 @@ void setup(){
   Serial.print(F("Address of this luminaire: "));
   Serial.println(self_add);
   delay(1000);  // allow things to stabilize
-  Wire.begin(self_add);	 //join as a master/slave at the address saved in the EPROM
-  Wire.onReceive(receiveEvent);	//register event handler
+  Wire.begin(self_add);   //join as a master/slave at the address saved in the EPROM
+  Wire.onReceive(receiveEvent); //register event handler
   
   calibration();
   analogWrite(LED, 0);
   delay(100);  // allow things to stabilize again
-  Serial.println(F("Calibration concluded"));
-  Serial.print(F("Value of o: "));
-  Serial.println(o);
-  Serial.print(F("Value of kii (escala 100): "));
-  Serial.println(kii);
-  Serial.print(F("Value of kij (escala 100): "));
-  Serial.println(kij);
-  flag_calibration = 1;
-  
+ 
   consensus();
       
 }
