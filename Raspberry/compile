@@ -1,0 +1,7 @@
+g++ -Wall -Wextra -ansi -pedantic [name].cpp -o [name]
+
+server:
+g++ -Wall -Wextra -ansi -pedantic server.cpp -o server -lboost_system
+
+client:
+g++ -Wall -Wextra -ansi -pedantic client.cpp -o client -lboost_system -pthread
