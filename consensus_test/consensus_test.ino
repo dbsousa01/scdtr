@@ -8,7 +8,7 @@
 #define LDR A0
 #define numChar 140
 
-#define iterations 5
+#define iterations 50
 #define sample_time 3000
 
 #define high 40
@@ -29,7 +29,7 @@ unsigned long delta_t1 , delta_t2;
 
 double y = 0 , intg = 0 , intg_ant = 0 , e = 0 , e_ant = 0 , u = 0 , u_sat = 0, u_pwm_ant = 0 , p = 0 ;
 
-double ref = low, ff = 0 , u_pwm = 0;
+double ref = high, ff = 0 , u_pwm = 0;
 
 double K1 = Kp * b_pi;
 double K2 = Kp * Ki * (sample_time / 2);
@@ -50,7 +50,6 @@ int refnow = 0;
 
 const int self_add = EEPROM.read(EPROM);
 
-char com_buf[9];
 double buf_num;
 
 double kii , kij , o;
@@ -140,7 +139,7 @@ void setPwmFrequency(int pin, int divisor) {
 //..................................WIRE RECEIVE.......................................//
 void receiveEvent(int howMany){
   char c_rec;
-  char com_buf[10];
+  char com_buf[10+1+1];
   char * strtokaux1;
   int buf_idx=0;
   while(Wire.available() > 0){
@@ -148,11 +147,11 @@ void receiveEvent(int howMany){
     if ( c_rec == 'a' ){
       flag_sent = 1;
       Serial.println("ACK");
-      break;
+      return;
     }else if (c_rec == 'c'){
       flag_calibration = 1;
       Serial.println("O outro acabou a calibração");
-      break;
+      return;
     }else{
       com_buf[buf_idx] = c_rec;
       buf_idx++;
@@ -162,27 +161,21 @@ void receiveEvent(int howMany){
   }
 
   if(flag_value == 1){
+    com_buf[9] = '\0';
     Serial.println(com_buf);
       
     strtokaux1 = strtok(com_buf, ";");
-    djj = atof(strtokaux1)*100;
-    
-    strtokaux1 = strtok(NULL, ";");
     dji = atof(strtokaux1)*100;
-
-    Serial.println("Porque... porque");
+    
+    strtokaux1 = strtok(NULL, "\0");
+    djj = atof(strtokaux1)*100;
     
     Serial.print(F("Valor de djj recebido: "));
     Serial.println(djj);
     Serial.print(F("Valor de dji recebido: "));
     Serial.println(dji);
-
-    Serial.println("Porque... porque 2");
     
-    char a = 'a'; 
-    Wire.beginTransmission(send_add);
-    Wire.write(a);
-    Wire.endTransmission();
+
     flag_received = 1;
     flag_value = 0;
   }
@@ -280,6 +273,7 @@ int parseData() { //to do this I need to know how many strings are we receiving 
 
 void calibration(){
     double li;
+    flag_calibration = 0;
    delay(1000); 
   int di = 255 * (self_add -1);
    
@@ -296,9 +290,6 @@ void calibration(){
    val = analogRead(LDR);
    
    li = luximeter(val);
-   
-   Serial.print(F("Valor lido para o kij: "));
-   Serial.println(li);
 
    if (di == 0){
      kij = (li - o)/100;
@@ -318,10 +309,7 @@ void calibration(){
    
    val = analogRead(LDR);
    
-   li = luximeter(val);
-   
-   Serial.print(F("Valor lido para o kii: "));
-   Serial.println(li);    
+   li = luximeter(val); 
    
    if (di == 0){
      kij = (li - o)/100;
@@ -348,45 +336,66 @@ void calibration(){
 //..................................SEND VALUES.......................................//
 
 void send_values(int add,double value1,double value2){
-  char b1[4+1];
-  char b2[4+1];
+  char b1[4+1+1];
+  char b2[4+1+1];
   
-  char b[10];
+  char b[10+1+1];
   
   dtostrf(value1,3,2,b1);
   dtostrf(value2,3,2,b2);
   
-  sprintf(b,"%s;%s",b1,b2);
+  sprintf(b,"%s;%s;",b1,b2);
 
-  //int count = 1;
-  //while ( flag_sent == 0 && count <= 10){
     
-    Wire.beginTransmission(send_add);
-    Wire.write(b);
-    Wire.endTransmission();
-    Serial.println("Cheguei aqui6");
-    //delay(100);
-    //count++;
-  //}
-  while (flag_received == 0 || flag_sent == 0 || flag_calibration == 0){
-    delay(10);
+  Wire.beginTransmission(send_add);
+  Wire.write(b);
+  Wire.endTransmission();
+  
+  while (flag_received == 0){
+    int x = 10*100;
   }
   flag_received = 0;
-  flag_sent = 0;
-  Serial.println("Cheguei aqui7");
+  
   
  
 }
 //....................................................................................//
 
 //..................................FEASIBILITY CHECK.......................................//
-void feasibility_check(double a,double b){
-  
-  if(a < 0 || a > 100 || kii*a + kij*b < ref-o)
+void feasibility_check(double a,double b, char var){
+
+  switch (var) {
+  case 'a': //unconstraint
+    if(a < 0 || a > 100 || kii*a + kij*b < ref-o)
     solution = 0;
+    break;
+  case 'b': //linear boundary
+    if(a < 0 || a > 100)
+    solution = 0;
+    break;
+  case 'c': //zero boundary
+    if(a > 100 || kii*a + kij*b < ref-o)
+    solution = 0;
+    break;
+  case 'd': //100 boundary
+    if(a > 100 || kii*a + kij*b < ref-o)
+    solution = 0;
+    break;
+  case 'e': //linear and zero boundary
+    if(a > 100)
+    solution = 0;
+    break;
+  case 'f': //linear and 100 boundary
+    if(a < 0)
+    solution = 0;
+    break;
+  default:
+    break;
+  }
+  
   if(solution){
 
-  calc_min = 0.5*qi*pow(a,2) + ci*a + yii*(a - dii_av) + yij*(b - dij_av) + 0.5*rho*pow((a - dii_av),2) + 0.5*rho*pow((b - dij_av),2);
+    calc_min = 0.5*qi*pow(a,2) + ci*a + yii*(a - dii_av) + yij*(b - dij_av) + 0.5*rho*pow((a - dii_av),2) + 0.5*rho*pow((b - dij_av),2);
   
     if(calc_min < best_min_i[K]){
        
@@ -406,11 +415,7 @@ void feasibility_check(double a,double b){
 void consensus(){
   
   for (K = 0; K < iterations; K++){
-//    while(flag_received == 0){
-//      delay(10);
-//    }
-//    flag_received = 0;
-    
+      
       dii_best = -1;
       dij_best = -1;
       best_min_i[K] = 100000; //big number
@@ -430,19 +435,6 @@ void consensus(){
       w1 = -kii*zii*pii - kij*zij*pij;
       w2 = -zii*pii;
       w3 = -w2;
-
-//      Serial.print("pii = ");
-//      Serial.println(pii);
-//      Serial.print("zii = ");
-//      Serial.println(zii);
-//      Serial.print("kii = ");
-//      Serial.println(kii);
-//      Serial.print("n = ");
-//      Serial.println(n);
-//      Serial.print("w1 = ");
-//      Serial.println(w1);
-//      Serial.print("u1 = ");
-//      Serial.println(u1);
       
       //unconstraint min:
       
@@ -451,12 +443,8 @@ void consensus(){
 
       //Feasibility check:
       
-      feasibility_check(dii_un,dij_un);
-
-//      Serial.print("calc_min: ");
-//      Serial.println(calc_min);
-
-      
+      feasibility_check(dii_un,dij_un,'a');
+            
       //Min constraint to linear boundary:
       
       dii_lb = pii*zii + pii*(kii/n)*(w1-u1);
@@ -464,61 +452,28 @@ void consensus(){
       
       //Feasibility check:
       
-      feasibility_check(dii_lb,dij_lb);
-
-//      Serial.print("calc_min: ");
-//      Serial.println(calc_min);
-//
-//      Serial.print("dii_best: ");
-//      Serial.println(dii_best);
-//      Serial.print("dij_best: ");
-//      Serial.println(dij_best);
+      feasibility_check(dii_lb,dij_lb,'b');
       
       //Compute minimum constrained to 0 boundary
       
       dii_b0 = 0;
       dij_b0 = pij*zij;
-
-//      Serial.print("dii_b0: ");
-//      Serial.println(dii_b0);
-//      Serial.print("dij_b0: ");
-//      Serial.println(dij_b0);
+      
       
       //Feasibility check:
       
-      feasibility_check(dii_b0,dij_b0);
+      feasibility_check(dii_b0,dij_b0,'c');
 
-//      Serial.print("calc_min: ");
-//      Serial.println(calc_min);
-//
-//      Serial.print("dii_best: ");
-//      Serial.println(dii_best);
-//      Serial.print("dij_best: ");
-//      Serial.println(dij_best);
       
       //Compute minimum constrained to 100 boundary
       dii_b100 = 100;
       dij_b100 = pij*zij;
-
-//      Serial.print("dii_b100: ");
-//      Serial.println(dii_b100);
-//      Serial.print("dij_b100: ");
-//      Serial.println(dij_b100);
-      
-
-      
+ 
       //Feasibility check:
       
-      feasibility_check(dii_b100,dij_b100);
-//
-//      Serial.print("calc_min: ");
-//      Serial.println(calc_min);
-//
-//      Serial.print("dii_best: ");
-//      Serial.println(dii_best);
-//      Serial.print("dij_best: ");
-//      Serial.println(dij_best);
-      
+      feasibility_check(dii_b100,dij_b100,'d');
+     
+      //............................d4....................................
       //Compute minimum constrained to linear and zero boundary
       common = (rho+qi)/((rho+qi)*n-kii*kii);
       det1 = common;
@@ -531,24 +486,13 @@ void consensus(){
       v2 = det3*u1 + det4*u2; //u2 = 0 so this can be simplified
       dii_l0 = pii*zii+pii*kii*(x1-v1)+pii*(x2-v2);
       dij_l0 = pij*zij+pij*kij*(x1-v1);
-      
 
-//      Serial.print("dii_l0: ");
-//      Serial.println(dii_l0);
-//      Serial.print("dij_l0: ");
-//      Serial.println(dij_l0);
+      //if(dii_l0 == -0.00) dii_l0 = 0.00;
+
       
       //Feasibility check:
       
-      feasibility_check(dii_l0,dij_l0);
-
-//      Serial.print("calc_min: ");
-//      Serial.println(calc_min);
-//
-//      Serial.print("dii_best: ");
-//      Serial.println(dii_best);
-//      Serial.print("dij_best: ");
-//      Serial.println(dij_best);
+      feasibility_check(dii_l0,dij_l0,'e');
       
       //Compute minimum constrained to linear and 100 boundary
       common = (rho+qi)/((rho+qi)*n-kii*kii);
@@ -563,24 +507,12 @@ void consensus(){
       dii_l100 = pii*zii+pii*kii*(x1-v1)-pii*(x2-v2);
       dij_l100 = pij*zij+pij*kij*(x1-v1);
 
-//      Serial.print("dii_l100: ");
-//      Serial.println(dii_l100);
-//      Serial.print("dij_l100: ");
-//      Serial.println(dij_l100);      
       
       //Feasibility check:
       
-      feasibility_check(dii_l100,dij_l100);
+      feasibility_check(dii_l100,dij_l100,'f');
 
-
-//      Serial.print("calc_min: ");
-//      Serial.println(calc_min);
-//
-//      Serial.print("dii_best: ");
-//      Serial.println(dii_best);
-//      Serial.print("dij_best: ");
-//      Serial.println(dij_best);
-//      
+      
 
       //Store data and save for next cycle
       best_dii[K] = dii_best;
@@ -606,19 +538,33 @@ void consensus(){
       dii_send = dii/100;
       dij_send = dij/100;
 
+
+      while (flag_calibration == 0){
+        int x = 10*100;
+      }
+
+      char a = 'a'; 
+      Wire.beginTransmission(send_add);
+      Wire.write(a);
+      Wire.endTransmission();
+
+      while(flag_sent == 0){
+        int x = 10*100;
+        Serial.println("Quero Enviar!!!");
+      }
+      flag_sent = 0;      
       send_values(send_add,dii_send,dij_send);
-      
-      
       
   }
   
-  ref = dii_av * 0.2123 + 1.389; //conversion from PWM to lux
+  ref = kii*dii + kij*dij + o;
   Serial.print("Nova ref: ");
-  Serial.println(ref);
-  Serial.print("Consensus: ");
-  Serial.print(dii_av);
+  Serial.print(ref);
+  Serial.println(" LUX");
+  Serial.print("Consensus (escala 0 a 100): ");
+  Serial.print(dii);
   Serial.print(" ; "); 
-  Serial.println(dij_av);    
+  Serial.println(dij);    
   
 }
 
@@ -634,10 +580,11 @@ void setup(){
   
   if(self_add == 1){
     b = 1.758;
+    
   }else{
     b = 1.808;
+    
   }
-  
   analogWrite(LED, 0);
   Serial.println(F("Beginning of the program"));
   Serial.print(F("Address of this luminaire: "));
