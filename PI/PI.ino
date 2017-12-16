@@ -24,7 +24,7 @@ int high = 40, low = 15;
 
 double y = 0 , intg = 0 , intg_ant = 0 , e = 0 , e_ant = 0 , u = 0 , u_sat = 0, u_pwm_ant = 0 , p = 0 ;
 
-double ref = low , ff = 0 , u_pwm = 0;
+double ref = high , ff = 0 , u_pwm = 0;
 
 double Kp = 0.6 , Ki = 0.6*0.0001 ;
 
