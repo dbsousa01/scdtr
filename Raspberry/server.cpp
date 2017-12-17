@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <iostream>
+#include <thread>
 #include <boost/bind.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio.hpp>
@@ -170,7 +171,8 @@ private:
          start_accept();
      }
 };
-int main()  {
+
+void tcp_run(){
 	try{
 		// IO Services such as sockets and servers
 	    io_service io;
@@ -182,6 +184,20 @@ int main()  {
 		//Error condition
 		std::cerr << e.what() << std::endl;
 	}
+}
 
+void concurrent_function(){ //function used just to check if multithreading is working
+	int counter =	0;	
+	while(++counter<10){
+	std::cout<<counter<<":Hello from Child Thread #" << std::this_thread::get_id()<<std::endl;
+		std::this_thread::yield();	//pass	time	slot	to	other	thread
+	}
+}
+
+int main()  {
+	std::thread t1{tcp_run};
+	std::thread t2{concurrent_function}; 
+	t1.join();
+	t2.join();
 	return 0;
 }
