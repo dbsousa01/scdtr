@@ -2,12 +2,12 @@
 #include "globals.h"
 #include "circular_buffer.h"
 
-#define SAMPLE_TIME 15 //ms - change accordingly
+#define SAMPLE_TIME 15/1000 //s - change accordingly
 
 arduino::arduino()//io_service $io)
 	:
-	lux_fifo((1000*60)/SAMPLE_TIME),
-	duty_fifo((1000*60)/SAMPLE_TIME)
+	lux_fifo(60/SAMPLE_TIME),
+	duty_fifo(60/SAMPLE_TIME)
 {
 	//begin_time = std::chrono::system_clock::now();
 	occupancy = 0;

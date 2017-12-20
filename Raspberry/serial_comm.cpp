@@ -1,22 +1,10 @@
-#include <unistd.h> 
-#include <stdio.h>
-#include <termios.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <string.h>
+#include "serial_comm.h"
 
 
-#define BAUDRATE 115200
-#define PORT "/dev/ttyUSB0"
-
-int main(){
-
+void serial_write(char * msg){
     int fd = open(PORT, O_RDWR);
     if (fd == -1) {
-      perror("/dev/ttyUSB0");
-      return 1;
+      perror("/dev/ttyACM0");
     }
 
     struct termios tios;
@@ -32,13 +20,15 @@ int main(){
     // start bit; sleep for 1ms to let it settle
     usleep(1000);    
 
+
     // output to serial port
-    char msg[] = "hi there";
+    //char msg[] = "hi there";
     write(fd, msg, strlen(msg));
-    char c;
-    for(;;){
-    	if(read(fd,&c,1)>0){
-    		fprintf(stdout,"%c\n", c);	
-    	}    	
-    }
 }
+//char c;
+// for(;;){
+// 	if(read(fd,&c,1)>0){
+// 		fprintf(stdout,"%c\n", c);	
+// 	}    	
+// }
+

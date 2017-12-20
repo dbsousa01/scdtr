@@ -13,6 +13,7 @@
 #include "circular_buffer.h"
 #include "globals.h"
 #include "arduino.h"
+#include "serial_comm.h"
 
 #ifndef LENGTH
 #define LENGTH 1024
@@ -174,11 +175,125 @@ public:
 	      				break; 
 	      			default :
 	      				std::cout << "Unexpected data received: " << line << "\n";
+	      			
 	      			}
-	    		}else if (com_buffer[0] == 's'){
-	    			//Set occupancy state at desk i
+
+	      		}else if (com_buffer[0] == 's'){
+	    			switch (com_buffer[2]){
+	    				case '1' : 
+	    					std::cout << "Set occupancy state at desk " << com_buffer[2] << " to " << com_buffer[4] << "\n";
+	    					if (com_buffer[4] == '1'){
+	    						
+	    						char msg[20];
+	    						sprintf(msg,"set lux ref 1:1\n");
+	    						serial_write(msg);
+	    						sprintf(send_message, "ACK\n");
+	    						ard.at(0)->set_occupancy(1);
+
+	    					}else if (com_buffer[4] == '0'){
+
+	    						char msg[20];
+	    						sprintf(msg,"set lux ref 1:0");
+	    						serial_write(msg);
+	    						sprintf(send_message, "ACK\n");
+	    						ard.at(0)->set_occupancy(0);
+	    					}
+	    					break;
+	    				case '2' : 
+	    					std::cout << "Set occupancy state at desk " << com_buffer[2] << " to " << com_buffer[4] << "\n";
+	    					if (com_buffer[4] == '1'){
+
+	    						char msg[20];
+	    						sprintf(msg,"set lux ref 2:1");
+	    						serial_write(msg);
+	    						sprintf(send_message, "ACK\n");
+	    						ard.at(1)->set_occupancy(1);
+
+	    					}else if (com_buffer[4] == '0'){
+
+	    						char msg[20];
+	    						sprintf(msg,"set lux ref 2:0");
+	    						serial_write(msg);
+	    						sprintf(send_message, "ACK\n");
+	    						ard.at(1)->set_occupancy(0);
+
+	    					}
+	    					break;
+
+	    				case 'f' :
+	    					switch (com_buffer[4]){
+	    						case '1' : 
+		
+			    					std::cout << "Set feedforward state at desk " << com_buffer[4] << " to " << com_buffer[6] << "\n";
+
+	    							if (com_buffer[6] == '1'){
+	    								
+	    								char msg[20];
+			    						sprintf(msg,"set feed 1:1");
+			    						serial_write(msg);
+			    						sprintf(send_message, "ACK\n");
+
+	    							}else if(com_buffer[6] == '0'){
+
+										char msg[20];
+			    						sprintf(msg,"set feed 1:0");
+			    						serial_write(msg);
+			    						sprintf(send_message, "ACK\n");	    								
+	    							}
+	    							break;
+	    						case '2' :
+
+			    					std::cout << "Set feedforward state at desk " << com_buffer[4] << " to " << com_buffer[6] << "\n";
+
+	    							if (com_buffer[6] == '1'){
+	    								
+	    								char msg[20];
+			    						sprintf(msg,"set feed 2:1");
+			    						serial_write(msg);
+			    						sprintf(send_message, "ACK\n");
+
+	    							}else if(com_buffer[6] == '0'){
+
+										char msg[20];
+			    						sprintf(msg,"set feed 2:0");
+			    						serial_write(msg);
+			    						sprintf(send_message, "ACK\n");	    								
+	    							} 
+	    							break;
+	    					}
+	    					break;
+
+	    				case 'c' :
+
+	    					std::cout << "Set the descentralized coordinated control to" << com_buffer[4] << "\n";
+
+	    					if (com_buffer[4] == '1'){
+
+	    						char msg[20];
+	    						sprintf(msg,"centralized control:1");
+	    						serial_write(msg);
+	    						sprintf(send_message, "ACK\n");
+	    						
+	    					}else if (com_buffer[4] == '0'){
+
+	    						char msg[20];
+	    						sprintf(msg,"centralized control:0");
+	    						serial_write(msg);
+	    						sprintf(send_message, "ACK\n");
+	    					} 
+	    					break;
+	    				
+
+	    			}
+
 	    		}else if (com_buffer[0] == 'r'){
-	    			//Restart the system and put the timers to zero
+	    		
+	    			std::cout << "Reset all values and recallibrate\n";
+	    			char R[1];
+	    			sprintf(R,"reset");
+	    			serial_write(R);
+	    			sprintf(send_message, "ACK\n");
+	    		
 	    		}else if (com_buffer[0] == 'b'){
 	    			//Last minute buffer
 	    			std::vector<float> values;
@@ -207,6 +322,8 @@ public:
 	    			std::cout << "Unexpected message: " << line << "\n";
 	    			h_write();
 	    		}
+
+
 	    		async_write(sock_,buffer(send_message,strlen(send_message)),
     						boost::bind(&conn::h_write, shared_from_this()));
 				//Send value to the client;    
