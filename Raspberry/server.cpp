@@ -38,7 +38,6 @@ public:
    	int bytes_Recv;
    	conn(io_service& io):sock_(io){}
    	int flag = 0;
-   	char X,I;
    	void h_write(){
    		//Heartbeat sent 
    		async_write(sock_,buffer("\n",1),
@@ -64,6 +63,7 @@ public:
    	void parse_read(const boost::system::error_code& ec){
 		if (!ec)
 	    {	
+	    	flag = 1;
 	      // Extract the newline-delimited message from the buffer.
 			std::string line;
 			std::istream is(&input_buffer_);
@@ -75,164 +75,144 @@ public:
 			std::string value;
 			int desk=0;
 
+
 	      // Empty messages are heartbeats and so ignored.
 	    	if (!line.empty())
 	    	{	
 	    		strcpy(com_buffer, line.c_str());
-	    		if(flag == 1){
-	    			if(com_buffer[0] == 'd' && com_buffer[2]== X && com_buffer[4]==I){
-	    				flag = 0;
-	    				async_write(sock_,buffer("ack\n"),
-    						boost::bind(&conn::h_write, shared_from_this()));
-	    				h_write();
+	    		if(com_buffer[0] == 'g'){
+	    			switch(com_buffer[2]){
+	      			case 'l' :
+	      				std::cout << "Get the current measured illuminance at desk: " << com_buffer[4] << "\n";
+	      				desk = boost::lexical_cast<int>(com_buffer[4]);
+	      				printf("%d\n", desk);
+	      				sprintf(send_message, "l <%d> <%.3f>", desk, ard.at(desk-1)->get_current_lux());
+	      				break;
+	      			case 'd' :
+	      				std::cout << "Get current duty cycle at luminaire: " << com_buffer[4] << "\n";
+	      				desk = boost::lexical_cast<int>(com_buffer[4]);
+	      				printf("%d\n", desk);
+	      				sprintf(send_message, "d <%d> <%.3f>", desk, ard.at(desk-1)->get_current_duty());
+	      				break;	
+	      			case 'o' :
+	      				std::cout << "Get current occupancy state at desk: " << com_buffer[4] << "\n";
+	      				desk = boost::lexical_cast<int>(com_buffer[4]);
+	      				printf("%d\n", desk);
+	      				sprintf(send_message, "o <%d> <%d>", desk,ard.at(desk-1)->get_occupancy());
+	      				break;
+	      			case 'L' :
+	      				std::cout << "Get current illuminance lower bound at desk: " << com_buffer[4] << "\n";
+	      				desk = boost::lexical_cast<int>(com_buffer[4]);
+	      				printf("%d\n", desk);
+	      				sprintf(send_message, "L <%d> <%i>", desk,ard.at(desk-1)->get_lower_bound());	
+	      				break;
+	      			case 'O' :
+	      				std::cout << "Get current external illumninance at desk: " << com_buffer[4] << "\n";
+	      				desk = boost::lexical_cast<int>(com_buffer[4]);
+	      				printf("%d\n", desk);
+	      				sprintf(send_message, "O <%d> <%.3f>", desk,ard.at(desk-1)->get_o());
+	      				break;
+	      			case 'r' :
+	      				std::cout << "Get current illumninance control reference at desk: " << com_buffer[4] << "\n";
+	      				desk = boost::lexical_cast<int>(com_buffer[4]);
+	      				printf("%d\n", desk);
+	      				sprintf(send_message, "r <%d> <%.3f>", desk,ard.at(desk-1)->get_ref());
+	      				break;
+	      			case 'p' :
+	      				if(com_buffer[4] == 'T'){
+	      					std::cout << "Get instantaneous total power consumption in the system\n";
+	      					float soma = ard.at(0)->get_current_duty() + ard.at(1)->get_current_duty();
+	      					sprintf(send_message, "p T <%.3f>",soma);
+	      				}else{
+	      					std::cout << "Get instantaneous power consumption at desk: " << com_buffer[4] << "\n";
+	      					desk = boost::lexical_cast<int>(com_buffer[4]);
+	      					printf("%d\n", desk);
+	      					sprintf(send_message, "p <%d> <%.3f>", desk,ard.at(desk-1)->get_current_duty());
+	      				}
+	      				break;
+	      			case 'e' :
+	      				if(com_buffer[4] == 'T'){
+	      					std::cout << "Get total accumulated energy consumption since last system restart\n";
+	      					float soma = ard.at(0)->get_energy() + ard.at(1)->get_energy();
+	      					sprintf(send_message, "e T <%.3f>",soma);
+	      				}else{
+	      					std::cout << "Get accumulated energy consumption at desk " << com_buffer[4] << " since the last system restart\n";
+	      					desk = boost::lexical_cast<int>(com_buffer[4]);
+	      					printf("%d\n", desk);
+	      					sprintf(send_message, "e <%d> <%.3f>", desk,ard.at(desk-1)->get_energy());
+	      					}
+	      				break;
+	      			case 'c' :
+	      				if(com_buffer[4] == 'T'){
+	      					std::cout << "Get total comfort error since last system restart\n";
+	      					float soma = ard.at(0)->get_comfort() + ard.at(1)->get_comfort();
+	      					sprintf(send_message, "c T <%.3f>",soma);
+	      				}else{
+	      					std::cout << "Get accumulated comfort error at desk " << com_buffer[4] << " since last system restart\n";
+	      					desk = boost::lexical_cast<int>(com_buffer[4]);
+	      					printf("%d\n", desk);
+	      					sprintf(send_message, "c <%d> <%.3f>", desk,ard.at(desk-1)->get_comfort());
+	      				}
+	      				break;
+	      			case 'v' :
+	      				if(com_buffer[4] == 'T'){
+	      					std::cout << "Get total comfort variance since last system restart\n";
+	      					float soma = ard.at(0)->get_variance() + ard.at(1)->get_variance();
+	      					sprintf(send_message, "v T <%.3f>",soma);
+	      				}else{
+	      					std::cout << "Get accumulated comfort variance at desk " << com_buffer[4] << " since last system restart\n";
+	      					desk = boost::lexical_cast<int>(com_buffer[4]);
+	      					printf("%d\n", desk);
+	      					sprintf(send_message, "v <%d> <%.3f>", desk,ard.at(desk-1)->get_variance());
+	      				}
+	      				break;
+	      			case 't' :
+	      				std::cout << "Get elapsed time since the last restart at desk: " << com_buffer[4] << "\n";
+	      				desk = boost::lexical_cast<int>(com_buffer[4]);
+	      				printf("%d\n", desk);
+	      				sprintf(send_message, "t <%d> <%s>", desk,ard.at(desk-1)->get_time().c_str());
+	      				break; 
+	      			default :
+	      				std::cout << "Unexpected data received: " << line << "\n";
+	      			}
+	    		}else if (com_buffer[0] == 's'){
+	    			//Set occupancy state at desk i
+	    		}else if (com_buffer[0] == 'r'){
+	    			//Restart the system and put the timers to zero
+	    		}else if (com_buffer[0] == 'b'){
+	    			//Last minute buffer
+	    			std::vector<float> values;
+	    			desk = boost::lexical_cast<int>(com_buffer[4]);
+	    			if(com_buffer[2] == 'l'){
+	    				printf("Entrei\n");
+	    				values = ard.at(desk-1)->get_lastminute_lux();
+	    				std::cout << "Tamanho: "<< values.size() << "\n";
+	    			}else if(com_buffer[2] == 'd'){
+	    				values = ard.at(desk-1)->get_lastminute_duty();
 	    			}else{
-	    				if(X == 'd'){
-		      				sprintf(send_message, "c <%c> <%d> <%.3f> <%s>",X, (int)I, ard.at((int)I-1)->get_current_duty(),ard.at(desk-1)->get_time().c_str);
-	    				}else if(X == 'l'){
-		      				sprintf(send_message, "c <%c> <%d> <%.3f> <%s>",X, (int)I, ard.at((int)I-1)->get_current_lux(),ard.at(desk-1)->get_time().c_str);
-	    				}
+	    				std::cout << "Error" << "\n";
 	    			}
+	    			value += " ";
+	    			value += std::to_string(values.at(0));
+	    			for(int i = 1; i < values.size(); i++){
+	    				value += ", ";
+	    				value += std::to_string(values.at(i));
+	    			}
+	    			sprintf(send_message, "b <%s> <%d> <%s>", com_buffer[2], desk, value.c_str());
+	    		}else if(com_buffer[0] == 'c'){
+	    			//Turn on real time stream
+	    		}else if(com_buffer[0] == 'd'){
+	    			//Turn off real time stream
 	    		}else{
-
-		    		if(com_buffer[0] == 'g'){
-		    			switch(com_buffer[2]){
-		      			case 'l' :
-		      				std::cout << "Get the current measured illuminance at desk: " << com_buffer[4] << "\n";
-		      				desk = boost::lexical_cast<int>(com_buffer[4]);
-		      				printf("%d\n", desk);
-		      				sprintf(send_message, "l <%d> <%.3f>", desk, ard.at(desk-1)->get_current_lux());
-		      				break;
-		      			case 'd' :
-		      				std::cout << "Get current duty cycle at luminaire: " << com_buffer[4] << "\n";
-		      				desk = boost::lexical_cast<int>(com_buffer[4]);
-		      				printf("%d\n", desk);
-		      				sprintf(send_message, "d <%d> <%.3f>", desk, ard.at(desk-1)->get_current_duty());
-		      				break;	
-		      			case 'o' :
-		      				std::cout << "Get current occupancy state at desk: " << com_buffer[4] << "\n";
-		      				desk = boost::lexical_cast<int>(com_buffer[4]);
-		      				printf("%d\n", desk);
-		      				sprintf(send_message, "o <%d> <%d>", desk,ard.at(desk-1)->get_occupancy());
-		      				break;
-		      			case 'L' :
-		      				std::cout << "Get current illuminance lower bound at desk: " << com_buffer[4] << "\n";
-		      				desk = boost::lexical_cast<int>(com_buffer[4]);
-		      				printf("%d\n", desk);
-		      				sprintf(send_message, "L <%d> <%i>", desk,ard.at(desk-1)->get_lower_bound());	
-		      				break;
-		      			case 'O' :
-		      				std::cout << "Get current external illumninance at desk: " << com_buffer[4] << "\n";
-		      				desk = boost::lexical_cast<int>(com_buffer[4]);
-		      				printf("%d\n", desk);
-		      				sprintf(send_message, "O <%d> <%.3f>", desk,ard.at(desk-1)->get_o());
-		      				break;
-		      			case 'r' :
-		      				std::cout << "Get current illumninance control reference at desk: " << com_buffer[4] << "\n";
-		      				desk = boost::lexical_cast<int>(com_buffer[4]);
-		      				printf("%d\n", desk);
-		      				sprintf(send_message, "r <%d> <%.3f>", desk,ard.at(desk-1)->get_ref());
-		      				break;
-		      			case 'p' :
-		      				if(com_buffer[4] == 'T'){
-		      					std::cout << "Get instantaneous total power consumption in the system\n";
-		      					float soma = ard.at(0)->get_current_duty() + ard.at(1)->get_current_duty();
-		      					sprintf(send_message, "p T <%.3f>",soma);
-		      				}else{
-		      					std::cout << "Get instantaneous power consumption at desk: " << com_buffer[4] << "\n";
-		      					desk = boost::lexical_cast<int>(com_buffer[4]);
-		      					printf("%d\n", desk);
-		      					sprintf(send_message, "p <%d> <%.3f>", desk,ard.at(desk-1)->get_current_duty());
-		      				}
-		      				break;
-		      			case 'e' :
-		      				if(com_buffer[4] == 'T'){
-		      					std::cout << "Get total accumulated energy consumption since last system restart\n";
-		      					float soma = ard.at(0)->get_energy() + ard.at(1)->get_energy();
-		      					sprintf(send_message, "e T <%.3f>",soma);
-		      				}else{
-		      					std::cout << "Get accumulated energy consumption at desk " << com_buffer[4] << " since the last system restart\n";
-		      					desk = boost::lexical_cast<int>(com_buffer[4]);
-		      					printf("%d\n", desk);
-		      					sprintf(send_message, "e <%d> <%.3f>", desk,ard.at(desk-1)->get_energy());
-		      					}
-		      				break;
-		      			case 'c' :
-		      				if(com_buffer[4] == 'T'){
-		      					std::cout << "Get total comfort error since last system restart\n";
-		      					float soma = ard.at(0)->get_comfort() + ard.at(1)->get_comfort();
-		      					sprintf(send_message, "c T <%.3f>",soma);
-		      				}else{
-		      					std::cout << "Get accumulated comfort error at desk " << com_buffer[4] << " since last system restart\n";
-		      					desk = boost::lexical_cast<int>(com_buffer[4]);
-		      					printf("%d\n", desk);
-		      					sprintf(send_message, "c <%d> <%.3f>", desk,ard.at(desk-1)->get_comfort());
-		      				}
-		      				break;
-		      			case 'v' :
-		      				if(com_buffer[4] == 'T'){
-		      					std::cout << "Get total comfort variance since last system restart\n";
-		      					float soma = ard.at(0)->get_variance() + ard.at(1)->get_variance();
-		      					sprintf(send_message, "v T <%.3f>",soma);
-		      				}else{
-		      					std::cout << "Get accumulated comfort variance at desk " << com_buffer[4] << " since last system restart\n";
-		      					desk = boost::lexical_cast<int>(com_buffer[4]);
-		      					printf("%d\n", desk);
-		      					sprintf(send_message, "v <%d> <%.3f>", desk,ard.at(desk-1)->get_variance());
-		      				}
-		      				break;
-		      			case 't' :
-		      				std::cout << "Get elapsed time since the last restart at desk: " << com_buffer[4] << "\n";
-		      				desk = boost::lexical_cast<int>(com_buffer[4]);
-		      				printf("%d\n", desk);
-		      				sprintf(send_message, "t <%d> <%s>", desk,ard.at(desk-1)->get_time().c_str());
-		      				break; 
-		      			default :
-		      				std::cout << "Unexpected data received: " << line << "\n";
-		      			}
-		    		}else if (com_buffer[0] == 's'){
-		    			//Set occupancy state at desk i
-		    		}else if (com_buffer[0] == 'r'){
-		    			//Restart the system and put the timers to zero
-		    		}else if (com_buffer[0] == 'b'){
-		    			//Last minute buffer
-		    			std::vector<float> values;
-		    			desk = boost::lexical_cast<int>(com_buffer[4]);
-		    			if(com_buffer[2] == 'l'){
-		    				printf("Entrei\n");
-		    				values = ard.at(desk-1)->get_lastminute_lux();
-		    				std::cout << "Tamanho: "<< values.size() << "\n";
-		    			}else if(com_buffer[2] == 'd'){
-		    				values = ard.at(desk-1)->get_lastminute_duty();
-		    			}else{
-		    				std::cout << "Error" << "\n";
-		    			}
-		    			value += " ";
-		    			value += std::to_string(values.at(0));
-		    			for(int i = 1; i < values.size(); i++){
-		    				value += ", ";
-		    				value += std::to_string(values.at(i));
-		    			}
-		    			sprintf(send_message, "b <%s> <%d> <%s>", com_buffer[2], desk, value.c_str());
-		    		}else if(com_buffer[0] == 'c'){
-		    			flag = 1;
-		    			X = com_buffer[2];
-		    			I = com_buffer[4];
-		    		}else if(com_buffer[0] == 'd'){
-		    			flag = 0;
-		    		}else if(line == "quit"){
-		    			std::cout << "Exiting program\n";
-		    			sock_.close();
-		    			exit(1);
-		    		}else{
-		    			std::cout << "Unexpected message: " << line << "\n";
-		    			h_write();
-		    		}
-		    	}
+	    			std::cout << "Unexpected message: " << line << "\n";
+	    			h_write();
+	    		}
 	    		async_write(sock_,buffer(send_message,strlen(send_message)),
     						boost::bind(&conn::h_write, shared_from_this()));
 				//Send value to the client;    
 				printf("Mensagem: %s\n",send_message );   
 	    	}
+	    	flag = 0;
 	    	h_write();
 	      //process the data received with a switch case
 
