@@ -120,7 +120,7 @@ private:
   {
     //std::cout << "start_read" << std::endl;
     // Set a deadline for the read operation.
-    deadline_.expires_from_now(boost::posix_time::seconds(600));
+    deadline_.expires_from_now(boost::posix_time::seconds(30));
 
     // Start an asynchronous operation to read a newline-delimited message.
     boost::asio::async_read_until(socket_, input_buffer_, '\n',
@@ -235,12 +235,6 @@ private:
         boost::asio::async_write(socket_, boost::asio::buffer(send_buffer_,n), 
            boost::bind(&client::handle_send, this, _1, _2));
         
-      }
-      if (line.compare("exit") == 0){
-        //Close the connection and exit the program
-        printf("Exited the program normally\n");
-        socket_.close();
-        exit(1);
       }
       /*if (length != 0)
       {
